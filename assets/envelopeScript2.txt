@@ -1,0 +1,20 @@
+"
+fs, wav = wavfile.read(recording)
+analytic_signal = hilbert(wav)
+amplitude_envelope = np.abs(analytic_signal)
+
+t = np.arange(fs) / fs
+
+avg = np.mean(amplitude_envelope)
+peaks, properties = find_peaks(amplitude_envelope, height=avg, distance=60000)
+
+notable_peak_loc = properties["peak_heights"]
+notable_peak_bool = notable_peak_loc > np.mean(notable_peak_loc)
+peaks = peaks[notable_peak_bool == True]
+np.diff(peaks)
+num_breaths = len(peaks)
+recording_time = len(wav) / fs
+respiratory_rate = 60 * num_breaths / recording_time
+respiratory_rate = round(respiratory_rate, 2)
+respiratory_rate = str(respiratory_rate)
+print(respiratory_rate)

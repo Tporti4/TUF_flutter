@@ -40,6 +40,7 @@ dependencies:
   audioplayers: ^0.17.4
   record_mp3: ^3.0.0
   flutter_audio_recorder2: ^0.0.2
+  chaquopy: ^0.0.14
 
 
 
@@ -97,4 +98,4 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
-    - assets/zelda-chest-opening.mp3
+    - assets/

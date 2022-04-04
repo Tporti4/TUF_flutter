@@ -14,6 +14,10 @@ import 'package:intl/intl.dart' show DateFormat;
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:record_mp3/record_mp3.dart';
+//import 'dart:convert' as convert;
+//import 'package:http/http.dart' as http;
+import 'package:chaquopy/chaquopy.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 void main() {
   runApp(const MyApp());
@@ -51,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isComplete = false;
   String filePath = '';
   int i = 0;
-  double respiratoryRate = 0;
+  String respiratoryRate = '';
 
   FlutterAudioRecorder2? audioRecorder;
   Recording? _current;
@@ -59,7 +63,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   static AudioCache audioCache = AudioCache();
   static AudioPlayer audioPlayer = AudioPlayer();
-  String backgroundSoundPath = 'zelda-chest-opening.mp3';
+  String backgroundSoundPath = 'sound_final.wav';
+
+  String imports = '';
+  String code = '';
+  String completeCode = '';
+
+  @override
+  void initState() {
+    super.initState();
+    loadImports();
+    loadCode();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontSize: 25),
             ),
             Text(
-              respiratoryRate.toStringAsFixed(2),
+              respiratoryRate,
               style: const TextStyle(fontSize: 25),
             ),
             Padding(
@@ -86,13 +101,6 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Text(
                 statusText,
                 style: const TextStyle(color: Colors.red, fontSize: 25),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: Text(
-                timer,
-                style: const TextStyle(fontSize: 25),
               ),
             ),
             ElevatedButton(
@@ -107,7 +115,10 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             ElevatedButton(
-              onPressed: stopRecording,
+              onPressed: () {
+                stopRecording();
+                envelopeAnalysis();
+              },
               child:
                   const Text('Stop Recording', style: TextStyle(fontSize: 15)),
               style: ElevatedButton.styleFrom(
@@ -175,6 +186,9 @@ class _MyHomePageState extends State<MyHomePage> {
       isComplete = false;
       print(filePath);
 
+      completeCode = imports + filePath + code;
+      print(completeCode);
+
       audioRecorder = FlutterAudioRecorder2(filePath,
           audioFormat: AudioFormat.WAV, sampleRate: 44100);
       await audioRecorder!.initialized;
@@ -222,9 +236,33 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> loadImports() async {
+    final loadedImports =
+        await rootBundle.loadString('assets/envelopeScript1.txt');
+    setState(() {
+      imports = loadedImports;
+    });
+  }
+
+  Future<void> loadCode() async {
+    final loadedCode =
+        await rootBundle.loadString('assets/envelopeScript2.txt');
+    setState(() {
+      code = loadedCode;
+    });
+  }
+
+  void envelopeAnalysis() async {
+    final result = await Chaquopy.executeCode(completeCode);
+    setState(() {
+      respiratoryRate = result['textOutputOrError'] ?? '';
+    });
+    print(respiratoryRate);
+  }
+
   // Play looping 20kHz signal
   void playLocalAsset() async {
-    audioPlayer = await audioCache.loop("zelda-chest-opening.mp3");
+    audioPlayer = await audioCache.loop("sound_final.wav");
   }
 
   void stopLocalAsset() async {
