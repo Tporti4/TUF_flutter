@@ -1,6 +1,6 @@
 # track_ur_fit
 
-A new Flutter project.
+This is an application that uses the Flutter plugin. It uses enveloping to determine respiratory rate from a recording of the user's breathing.
 
 ## Getting Started
 
