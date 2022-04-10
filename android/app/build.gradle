@@ -49,6 +49,7 @@ android {
             pip {
                 install "scipy"
                 install "numpy"
+                install "ipython"
             }
         }
 

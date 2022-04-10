@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'dart:typed_data';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ import 'package:record_mp3/record_mp3.dart';
 //import 'package:http/http.dart' as http;
 import 'package:chaquopy/chaquopy.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:ext_storage/ext_storage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isComplete = false;
   String filePath = '';
   int i = 0;
-  String respiratoryRate = '';
+  String respiratoryRate = '0.00';
 
   FlutterAudioRecorder2? audioRecorder;
   Recording? _current;
@@ -97,14 +99,18 @@ class _MyHomePageState extends State<MyHomePage> {
               style: const TextStyle(fontSize: 25),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 20.0),
+              padding: const EdgeInsets.only(top: 10.0, bottom: 15.0),
               child: Text(
                 statusText,
                 style: const TextStyle(color: Colors.red, fontSize: 25),
               ),
             ),
             ElevatedButton(
-              onPressed: startRecording,
+              onPressed: () {
+                startRecording();
+                //fetchEnvelope();
+                //_writeFileToStorage();
+              },
               child:
                   const Text('Start Recording', style: TextStyle(fontSize: 15)),
               style: ElevatedButton.styleFrom(
@@ -123,34 +129,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   const Text('Stop Recording', style: TextStyle(fontSize: 15)),
               style: ElevatedButton.styleFrom(
                 primary: Colors.blue,
-                onPrimary: Colors.white,
-                shadowColor: Colors.black,
-                elevation: 5,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                startRecording();
-                playLocalAsset();
-              },
-              child: const Text('Record with 20kHz',
-                  style: TextStyle(fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                primary: Colors.green,
-                onPrimary: Colors.white,
-                shadowColor: Colors.black,
-                elevation: 5,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                stopRecording();
-                stopLocalAsset();
-              },
-              child: const Text('Stop 20kHz Recording',
-                  style: TextStyle(fontSize: 15)),
-              style: ElevatedButton.styleFrom(
-                primary: Colors.purple,
                 onPrimary: Colors.white,
                 shadowColor: Colors.black,
                 elevation: 5,
@@ -186,7 +164,13 @@ class _MyHomePageState extends State<MyHomePage> {
       isComplete = false;
       print(filePath);
 
-      completeCode = imports + filePath + code;
+      var exists = await io.File(filePath + '.wav').exists();
+      if (exists) {
+        final file = io.File(filePath + '.wav');
+        file.delete();
+      }
+
+      completeCode = imports + filePath + '.wav' + code;
       print(completeCode);
 
       audioRecorder = FlutterAudioRecorder2(filePath,
@@ -228,13 +212,58 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void stopRecording() async {
     var result = await audioRecorder!.stop();
-    statusText = "Record complete";
+    statusText = "Recording Complete";
     isComplete = true;
+
+    /*
+    String fileName = await makeFileName();
+    print(fileName);
+    fileName = '/recordings/' + fileName;
+    print(fileName);
+    final io.Directory appDocDirectory = (await getExternalStorageDirectory())!;
+    String recordingPath = '${appDocDirectory.path}' + fileName;
+    print(recordingPath);
+    try {
+      final io.File file = io.File(recordingPath);
+      var dataOffset = 74;
+      var bytes = await file.readAsBytes();
+      var shorts = bytes.buffer.asInt16List(dataOffset);
+      print(shorts.length);
+      print(shorts[0]);
+      print(shorts);
+    } catch (e) {
+      print('Could not read file');
+    }
+
+    var dataOffset = 74;
+    //var bytes = await io.File(
+    //'/storage/emulated/0/Android/data/com.tuf_stuff.track_ur_fit/files/recordings/test_4-6-2022_8:7:31_0')
+    //.readAsBytes();
+
+     */
+
     setState(() {
       _current = result;
       _currentStatus = _current!.status!;
     });
   }
+
+  /*
+  void fetchEnvelope() async {
+    var url = Uri.http('10.0.2.2:5000/', '');
+    print(url);
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var jsonResponse =
+          convert.jsonDecode(response.body) as Map<String, dynamic>;
+      var result = jsonResponse['result'];
+      print('Result: $result');
+    } else {
+      print('Request failed with status: ${response.statusCode}.');
+    }
+  }
+
+   */
 
   Future<void> loadImports() async {
     final loadedImports =
@@ -260,6 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
     print(respiratoryRate);
   }
 
+  /*
   // Play looping 20kHz signal
   void playLocalAsset() async {
     audioPlayer = await audioCache.loop("sound_final.wav");
@@ -276,6 +306,56 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<String> getDirectoryPath() async {
+    io.Directory appDocDirectory;
+    if (io.Platform.isIOS) {
+      appDocDirectory = await getApplicationDocumentsDirectory();
+    } else {
+      appDocDirectory = (await getExternalStorageDirectory())!;
+    }
+
+    return appDocDirectory.path;
+  }
+
+  String _fileExtension = '.wav';
+  String _directoryPath = '';
+
+  Future<String> makeFileName() async {
+    return 'test_' + _fileExtension;
+  }
+
+  void _createFile() async {
+    var _completeFileName = await makeFileName();
+    _directoryPath = await getDirectoryPath();
+    io.File(_directoryPath + '/' + _completeFileName)
+        .create(recursive: true)
+        .then((io.File file) async {
+      //write to file
+      Uint8List bytes = await file.readAsBytes();
+      file.writeAsBytes(bytes);
+      print(file.path);
+      completeCode = imports + file.path + code;
+      print(completeCode);
+    });
+  }
+
+  void _createDirectory() async {
+    bool isDirectoryCreated = await io.Directory(_directoryPath).exists();
+    if (!isDirectoryCreated) {
+      io.Directory(_directoryPath).create()
+          // The created directory is returned as a Future.
+          .then((io.Directory directory) {
+        print(directory.path);
+      });
+    }
+  }
+
+  void _writeFileToStorage() async {
+    _createDirectory();
+    _createFile();
+  }
+   */
+
   Future<String> getFilePath() async {
     io.Directory appDocDirectory;
     if (io.Platform.isIOS) {
@@ -289,20 +369,6 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!d.existsSync()) {
       d.createSync(recursive: true);
     }
-    return audioPath +
-        '/test_' +
-        DateTime.now().month.toString() +
-        '-' +
-        DateTime.now().day.toString() +
-        '-' +
-        DateTime.now().year.toString() +
-        '_' +
-        DateTime.now().hour.toString() +
-        ':' +
-        DateTime.now().minute.toString() +
-        ':' +
-        DateTime.now().second.toString() +
-        '_' +
-        '${i++}';
+    return audioPath + '/test_' + '${i++}';
   }
 }

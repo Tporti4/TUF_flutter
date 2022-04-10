@@ -40,7 +40,9 @@ dependencies:
   audioplayers: ^0.17.4
   record_mp3: ^3.0.0
   flutter_audio_recorder2: ^0.0.2
+  http: ^0.13.4
   chaquopy: ^0.0.14
+  ext_storage: ^1.0.3
 
 
 
